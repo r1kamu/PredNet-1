@@ -165,6 +165,7 @@ else:
 
             print('frameNo:' + str(i))
             if (i + 1) % args.bprop == 0 or i == len(imagelist) - 1:
+                print('loss:' + str(float(loss.data)))
                 model.zerograds()
                 loss.backward()
                 loss.unchain_backward()
@@ -175,7 +176,6 @@ else:
                 write_image(model.P0.data[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'y.jpg')
                 write_image(x_batch[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'z.jpg')
                 if args.gpu >= 0:model.to_gpu()
-                print('loss:' + str(float(model.loss.data)))
 
             if args.save != 0 and count%args.save == 0:
                 print('save the model')
