@@ -181,7 +181,7 @@ else:
                 if args.gpu >= 0:model.to_gpu()
                 print('loss:' + str(float(model.loss.data)))
 
-            if (count%args.save) == 0:
+            if args.save != 0 and count%args.save == 0:
                 print('save the model')
                 serializers.save_npz('models/' + str(count) + '.model', model)
                 print('save the optimizer')
