@@ -61,9 +61,7 @@ if args.gpu >= 0:
 xp = cuda.cupy if args.gpu >= 0 else np
 
 #Create Model
-prednet = net.PredNet(args.size[0], args.size[1], args.channels)
-model = L.Classifier(prednet, lossfun=mean_squared_error)
-model.compute_accuracy = False
+model = net.PredNet(args.size[0], args.size[1], args.channels)
 optimizer = optimizers.Adam()
 optimizer.setup(model)
 
@@ -155,17 +153,14 @@ else:
     seq = 0
     while count < args.period:
         imagelist = load_list(sequencelist[seq], args.root)
-        prednet.reset_state()
+        model.reset_state()
         loss = 0
 
         batchSize = 1
         x_batch = np.ndarray((batchSize, args.channels[0], args.size[1], args.size[0]), dtype=np.float32)
-        y_batch = np.ndarray((batchSize, args.channels[0], args.size[1], args.size[0]), dtype=np.float32)
         x_batch[0] = read_image(imagelist[0]);
         for i in range(1, len(imagelist)):
-            y_batch[0] = read_image(imagelist[i]);
-            loss += model(chainer.Variable(xp.asarray(x_batch)),
-                          chainer.Variable(xp.asarray(y_batch)))
+            x_batch[0] = read_image(imagelist[i])
 
             print('frameNo:' + str(i))
             if (i + 1) % args.bprop == 0 or i == len(imagelist) - 1:
@@ -175,9 +170,9 @@ else:
                 loss = 0
                 optimizer.update()
                 if args.gpu >= 0:model.to_cpu()
-                write_image(x_batch[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'x.jpg')
-                write_image(model.y.data[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'y.jpg')
-                write_image(y_batch[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'z.jpg')
+                write_image(read_image(imagelist[i-1]), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'x.jpg')
+                write_image(model.P0.data[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'y.jpg')
+                write_image(x_batch[0].copy(), 'images/' + str(count) + '_' + str(seq) + '_' + str(i) + 'z.jpg')
                 if args.gpu >= 0:model.to_gpu()
                 print('loss:' + str(float(model.loss.data)))
 
@@ -187,7 +182,7 @@ else:
                 print('save the optimizer')
                 serializers.save_npz('models/' + str(count) + '.state', optimizer)
 
-            x_batch[0] = y_batch[0]
+            loss += model(chainer.Variable(xp.asarray(x_batch)))
             count += 1
         
         seq = (seq + 1)%len(sequencelist)

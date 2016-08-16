@@ -30,6 +30,7 @@ class EltFilter(chainer.Link):
             y = y + self.b
         return y
 
+
 class ConvLSTM(chainer.Chain):
     def __init__(self, width, height, in_channels, out_channels, batchSize = 1):
         self.state_size = (batchSize, out_channels, height, width)
@@ -164,6 +165,7 @@ class PredNet(chainer.Chain):
             getattr(self, 'ConvLSTM' + str(nth)).reset_state()
 
     def __call__(self, x):
+        loss = 0
         for nth in range(self.layers):
             if getattr(self, 'P' + str(nth)) is None:
                 setattr(self, 'P' + str(nth), variable.Variable(
@@ -175,10 +177,12 @@ class PredNet(chainer.Chain):
             if nth == 0:
                 E[nth] = F.concat((F.relu(x - getattr(self, 'P' + str(nth))),
                                   F.relu(getattr(self, 'P' + str(nth)) - x)))
+                loss += F.mean_squared_error(x, getattr(self, 'P0'))
             else:
                 A = F.max_pooling_2d(F.relu(getattr(self, 'ConvA' + str(nth))(E[nth - 1])), 2, stride = 2)
                 E[nth] = F.concat((F.relu(A - getattr(self, 'P' + str(nth))),
                                   F.relu(getattr(self, 'P' + str(nth)) - A)))
+                loss += F.mean_squared_error(A, getattr(self, 'P' + str(nth)))
 
         R = [None] * self.layers
         for nth in reversed(range(self.layers)):
@@ -193,4 +197,4 @@ class PredNet(chainer.Chain):
             else:
                 setattr(self, 'P' + str(nth), F.relu(getattr(self, 'ConvP' + str(nth))(R[nth])))
         
-        return self.P0
+        return loss
