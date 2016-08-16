@@ -168,7 +168,7 @@ else:
                           chainer.Variable(xp.asarray(y_batch)))
 
             print('frameNo:' + str(i))
-            if (i + 1) % args.bprop == 0:
+            if (i + 1) % args.bprop == 0 or i == len(imagelist) - 1:
                 model.zerograds()
                 loss.backward()
                 loss.unchain_backward()
