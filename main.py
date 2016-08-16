@@ -64,6 +64,7 @@ xp = cuda.cupy if args.gpu >= 0 else np
 model = net.PredNet(args.size[0], args.size[1], args.channels)
 optimizer = optimizers.Adam()
 optimizer.setup(model)
+optimizer.add_hook(chainer.optimizer.Lasso)
 
 if args.gpu >= 0:
     cuda.get_device(args.gpu).use()
